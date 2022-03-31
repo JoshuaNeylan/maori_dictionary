@@ -5,6 +5,7 @@
     box-sizing: border-box;
 }
 
+
 header {
     grid-area: header;
     background-color: #f00;
@@ -14,15 +15,6 @@ header {
 nav {
     grid-area: nav;
 }
-
-main {
-    grid-area: main;
-    padding: 1rem;
-    background-color: #edd;
-    height: 100vh;
-    background-image: url("../images/poutama.jpg");
-}
-
 
 h1, h2, h3, h4 {
     padding: 1rem 0;
@@ -163,8 +155,14 @@ nav input, nav span {
 }
 
 main {
-    height: 100vh;
+    min-height: 100vh;
     background-image: url("../images/poutama.jpg");
+    background-repeat: repeat;
+}
+
+main a:hover {
+
+    color: #ff0000;
 
 }
 

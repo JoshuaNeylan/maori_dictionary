@@ -30,9 +30,11 @@ def category_setup():
     cur.execute(query)
     category_list = cur.fetchall()
     con.close()
-    category_list = list(set(category_list))
+    print(category_list)
     for i in range(len(category_list)):
-        category_list[i] = category_list[i][0].title()
+        category_list[i] = category_list[i][0].strip().title()
+    category_list = sorted(list(set(category_list)))
+
     return category_list
 
 
@@ -54,9 +56,22 @@ def render_category(category):
     cur.execute(query, (category,))
     category_words = cur.fetchall()
     con.close()
-    print(category_words)
 
     return render_template("category.html", category=category, words=category_words)
+
+@app.route("/categorys/<category>/<word>")
+def render_category_word_details(word, category):
+
+    con = create_connection(DB_NAME)
+
+    query = "SELECT maori, english, category, definition, year_level, image, image_type, timestamp, author FROM Dictionary WHERE maori = ?"
+
+    cur = con.cursor()
+    cur.execute(query, (word,))
+    word_details = cur.fetchall()
+    con.close()
+    print(word_details)
+    return render_template("word_details.html", word_details=word_details, category=category)
 
 
 
