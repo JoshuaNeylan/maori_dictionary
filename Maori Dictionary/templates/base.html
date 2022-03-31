@@ -1,0 +1,51 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+	<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Suez+One&display=swap" rel="stylesheet">
+	<title>{% block title %}{% endblock %}</title>
+	<meta name="Description" content="Author: Joshua Neylan, Content: A dictionary to convert maori words to english.">
+</head>
+
+<body>
+
+    <header>
+        <h1>{% block heading %}{% endblock %}</h1>
+    </header>
+
+    <nav>
+
+        <ul>
+
+            <li><h1><a href="\">Home</a></h1></li>
+            <li><h1><a href="\">SecondHome</a></h1></li>
+
+
+        </ul>
+
+    </nav>
+
+
+    <main>
+
+        <div id = "container">
+
+            {% block main%}{% endblock %}
+
+        </div>
+
+    </main>
+
+    <div class = "footer_top"></div>
+
+    <footer>
+
+        <p>
+            &copy; Joshua Neylan 2022
+        </p>
+    </footer>
+
+</body>
+</html>
