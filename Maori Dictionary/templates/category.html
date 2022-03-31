@@ -10,7 +10,7 @@
     <h1> Words about {{ category }}:</h1>
     {% for word in words %}
 
-    <b><p><h2>{{word[0]}}: {{word[1]}}</h2>{{word[2]}} <a href = "/categorys/{{category}}/{{word[0]}}">more info</a></p></b>
+    <p><h2>{{word[0]}}: {{word[1]}}</h2>{{word[2]}} <a href = "/categorys/{{category}}/{{word[0]}}">more info</a></p>
 
         {% endfor %}
 

@@ -22,6 +22,7 @@ def create_connection(db_file):
     return None
 
 def category_setup():
+
     con = create_connection(DB_NAME)
 
     query = "SELECT category FROM Dictionary"
@@ -30,10 +31,14 @@ def category_setup():
     cur.execute(query)
     category_list = cur.fetchall()
     con.close()
-    print(category_list)
     for i in range(len(category_list)):
-        category_list[i] = category_list[i][0].strip().title()
+        category_list[i] = category_list[i][0].title()
     category_list = sorted(list(set(category_list)))
+
+
+
+
+
 
     return category_list
 
@@ -56,7 +61,7 @@ def render_category(category):
     cur.execute(query, (category,))
     category_words = cur.fetchall()
     con.close()
-
+    print(len(category_words))
     return render_template("category.html", category=category, words=category_words)
 
 @app.route("/categorys/<category>/<word>")
@@ -69,9 +74,12 @@ def render_category_word_details(word, category):
     cur = con.cursor()
     cur.execute(query, (word,))
     word_details = cur.fetchall()
+    improved_word_details = []
+    for i in range(len(word_details[0])):
+        improved_word_details.append(word_details[0][i])
     con.close()
-    print(word_details)
-    return render_template("word_details.html", word_details=word_details, category=category)
+    print(improved_word_details)
+    return render_template("word_details.html", word_details=improved_word_details, category=category)
 
 
 

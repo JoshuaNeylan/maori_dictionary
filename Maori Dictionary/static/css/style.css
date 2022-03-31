@@ -16,11 +16,23 @@ nav {
     grid-area: nav;
 }
 
+
+.h0 {
+
+    padding: 1rem 0;
+    font-family: 'Suez One', serif;
+    color: #000;
+    text-shadow: 2px 2px 4px #fff;
+    font-size: 300%;
+
+}
+
 h1, h2, h3, h4 {
     padding: 1rem 0;
     font-family: 'Suez One', serif;
     color: #000;
     text-shadow: 2px 2px 4px #fff;
+
 }
 
 p {
