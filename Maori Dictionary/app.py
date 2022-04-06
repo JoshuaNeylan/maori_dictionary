@@ -64,22 +64,19 @@ def render_category(category):
     print(len(category_words))
     return render_template("category.html", category=category, words=category_words)
 
-@app.route("/categorys/<category>/<word>")
+@app.route("/<category>/<word>")
 def render_category_word_details(word, category):
 
     con = create_connection(DB_NAME)
 
-    query = "SELECT maori, english, category, definition, year_level, image, image_type, timestamp, author FROM Dictionary WHERE maori = ?"
+    query = "SELECT maori, english, category, definition, year_level, image, timestamp, author FROM Dictionary WHERE maori = ?"
 
     cur = con.cursor()
     cur.execute(query, (word,))
-    word_details = cur.fetchall()
-    improved_word_details = []
-    for i in range(len(word_details[0])):
-        improved_word_details.append(word_details[0][i])
+    word_details = cur.fetchall()[0]
     con.close()
-    print(improved_word_details)
-    return render_template("word_details.html", word_details=improved_word_details, category=category)
+
+    return render_template("word_details.html", word_details=word_details, category=category)
 
 
 
