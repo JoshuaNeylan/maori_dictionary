@@ -11,8 +11,15 @@
     <h2>Category: {{word_details[2]}}</h2>
     <h2>Year level word is first encountered: {{word_details[4]}}</h2>
 
+    {% if image_found %}
 
+        <img src="../static/images/{{word_details[5]}}">
 
-    <img src="../static/images/{{word_details[5]}}" alt="../static/images/noimage.png">
+    {% else %}
 
+        <img src="../static/images/noimage.png">
+
+    {% endif %}
+
+    <h2>This was uploaded by: {{word_details[7]}} on the {{word_details[6]}}</h2>
 {% endblock %}
