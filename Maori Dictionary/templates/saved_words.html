@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Maōri Dictionary | Home{% endblock %}
+
+{% block heading %}Maōri - English Dictionary{% endblock %}
+
+{% block main %}
+
+
+    <h1> Words you have saved:</h1>
+    {% for word_details in saved_words_details_list %}
+
+    <p><h2>{{word_details[0][0]}}: {{word_details[0][1]}}</h2>{{word_details[0][3]}} <a href = "/{{word_details[0][2]}}/{{word_details[0][0]}}">more info</a></p>
+    <p>This word was saved: {{word_details[1]}}</p>
+    <a href = "/unsaveword-{{word_details[0][2]}}-{{word_details[0][4]}}">Remove word from saved</a>
+        {% endfor %}
+
+
+
+
+{% endblock %}

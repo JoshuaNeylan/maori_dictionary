@@ -10,9 +10,13 @@
     <h1> Words about {{ category }}:</h1>
     {% for word in words %}
 
-    <p><h2>{{word[0]}}: {{word[1]}}</h2>{{word[2]}} <a href = "/{{category}}/{{word[0]}}">more info</a></p>
+        <p><h2>{{word[0]}}: {{word[1]}}</h2>{{word[2]}} <a href = "/{{category}}/{{word[0]}}">more info</a></p>
+        {% if logged_in %}
+            <b><a href="/saveword-{{category}}-{{word[3]}}">Save word</a></b>
+        {% endif %}
 
-        {% endfor %}
+
+    {% endfor %}
 
 
 

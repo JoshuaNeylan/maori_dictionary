@@ -58,7 +58,7 @@ def render_home():
 def render_category(category):
     con = create_connection(DB_NAME)
 
-    query = "SELECT maori, english, definition FROM Dictionary WHERE category = ?"
+    query = "SELECT maori, english, definition, id FROM Dictionary WHERE category = ?"
 
     cur = con.cursor()
     cur.execute(query, (category,))
@@ -67,12 +67,109 @@ def render_category(category):
     print(len(category_words))
     return render_template("category.html", category=category, words=category_words, logged_in=is_logged_in())
 
+@app.route("/saveword-<category>-<word_id>")
+def save_word(category, word_id):
+    if not is_logged_in():
+        return redirect("/")
+
+    try:
+        word_id = int(word_id)
+    except ValueError:
+
+        print(f"{word_id} isn't an interger")
+
+        return redirect("/categorys/<category>?error=Invalid+word+id")
+
+    user_id = session["user_id"]
+    print(f"user id is {user_id}", word_id)
+    timestamp = date.today()
+    con = create_connection(DB_NAME)
+    cur = con.cursor()
+
+    try:
+        query = "SELECT word_id, user_id FROM Saved_words WHERE word_id = ? and user_id = ?"
+
+        cur.execute(query, (word_id, user_id))
+        try:
+
+            saved_word_details = cur.fetchall()
+
+            if len(saved_word_details[0]) != 0:
+
+                return redirect(f"/categorys/{category}?error=Word+has+already+been+saved")
+
+        except IndexError:
+
+            query = "INSERT INTO Saved_words (word_id, user_id, timestamp) VALUES (?, ?, ?)"
+            cur.execute(query, (word_id, user_id, timestamp))
+
+    except sqlite3.IntegrityError as e:
+        print(e)
+        print("Problem Inserting into database - foreign key!")
+        con.close()
+        return redirect(f"/categorys/{category}?error=Invalid+word+id")
+
+    con.commit()
+    con.close()
+    return redirect(f"/categorys/{category}")
+
+@app.route("/unsaveword-<category>-<word_id>")
+def remove_saved_word(category, word_id):
+    if not is_logged_in():
+        return redirect("/")
+
+    try:
+        word_id = int(word_id)
+    except ValueError:
+
+        print(f"{word_id} isn't an interger")
+
+        return redirect("/saved?error=Invalid+word+id")
+
+    user_id = session["user_id"]
+    print(f"user id is {user_id}", word_id)
+    timestamp = date.today()
+    con = create_connection(DB_NAME)
+    cur = con.cursor()
+
+    try:
+        query = "SELECT word_id, user_id FROM Saved_words WHERE word_id = ? and user_id = ?"
+
+        cur.execute(query, (word_id, user_id))
+        try:
+
+            saved_word_details = cur.fetchall()
+
+            if len(saved_word_details[0]) != 0:
+
+                query = "DELETE FROM Saved_words WHERE word_id = ? and user_id = ?"
+                cur.execute(query, (word_id, user_id))
+
+
+
+
+        except IndexError:
+
+            return redirect(f"/saved?error=Word+isnt+saved")
+
+
+    except sqlite3.IntegrityError as e:
+        print(e)
+        print("Problem Inserting into database - foreign key!")
+        con.close()
+        return redirect(f"/saved?error=Invalid+word+id")
+
+    con.commit()
+    con.close()
+    return redirect(f"/saved")
+
+
 
 @app.route("/<category>/<word>")
 def render_category_word_details(word, category):
     con = create_connection(DB_NAME)
 
-    query = "SELECT maori, english, category, definition, year_level, image, timestamp, author FROM Dictionary WHERE maori = ?"
+    query = "SELECT maori, english, category, definition, year_level, image, timestamp, author, id FROM Dictionary WHERE maori = ?"
 
     cur = con.cursor()
     cur.execute(query, (word,))
@@ -216,6 +313,35 @@ def logout():
     [session.pop(key) for key in list(session.keys())]
     print(session)
     return redirect("/?message=See+you+next+time!")
+
+@app.route("/saved")
+def render_saved():
+    user_id = session["user_id"]
+    con = create_connection(DB_NAME)
+    query = "SELECT word_id, timestamp FROM Saved_words WHERE user_id = ?;"
+
+    cur = con.cursor()
+    cur.execute(query, (user_id,))
+    word_ids_with_timestamps = cur.fetchall()
+    for i in range(len(word_ids_with_timestamps)):
+        word_ids_with_timestamps[i] = word_ids_with_timestamps[i][0], word_ids_with_timestamps[i][1]
+
+    word_ids_with_timestamps = list(set(word_ids_with_timestamps))
+    print(word_ids_with_timestamps)
+
+    query = "SELECT maori, english, category, definition, id FROM Dictionary WHERE id = ?;"
+
+    saved_words_details_list = []
+
+    for word_id_with_timestamp in word_ids_with_timestamps:
+        cur.execute(query, (word_id_with_timestamp[0],))
+        word_details = cur.fetchall()
+        print(word_details)
+
+        saved_words_details_list.append([word_details[0], word_id_with_timestamp[1]])
+
+
+    return render_template("saved_words.html", categorys=category_setup(), logged_in=is_logged_in(), saved_words_details_list = saved_words_details_list)
 
 
 if __name__ == "__main__":

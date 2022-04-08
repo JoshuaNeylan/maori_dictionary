@@ -22,7 +22,9 @@
             <li><h1><a href="\">Home</a></h1></li>
 
             {% if logged_in %}
+                <li><h1><a href="/saved">Saved words</a></h1></li>
                 <li><h1><a href="/logout">Log out</a></h1></li>
+
 
             {% else %}
                 <li><h1><a href="/login">Login</a></h1></li>
