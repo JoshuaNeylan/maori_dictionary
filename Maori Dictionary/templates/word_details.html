@@ -6,20 +6,47 @@
 
 {% block main %}
 
+
     <div class = "h0">{{word_details[0]}}: {{word_details[1]}}</div><br>
-    <h2>Definition: {{word_details[3]}}</h2>
-    <h2>Category: {{word_details[2]}}</h2>
-    <h2>Year level word is first encountered: {{word_details[4]}}</h2>
+    <table>
+        <tr>
 
-    {% if image_found %}
+            <td><b>Definition:</b></td>
+            <td> {{word_details[3]}} </td>
 
-        <img src="../static/images/{{word_details[5]}}">
+        </tr>
 
-    {% else %}
+        <tr>
+            <td><b> Category:</b></td>
+            <td>{{word_details[2]}}</td>
 
-        <img src="../static/images/noimage.png">
+        </tr>
 
-    {% endif %}
+        <tr>
+            <td><b>Year level word is first encountered:</b></td>
+            <td>{{word_details[4]}}</td>
 
-    <h2>This was uploaded by: {{word_details[7]}} on the {{word_details[6]}}</h2>
+        </tr>
+
+        <tr>
+
+
+            {% if image_found %}
+
+                <td colspan="2"><img src="../static/images/{{word_details[5]}}"></td>
+
+            {% else %}
+
+                <td colspan="2"><img src="../static/images/noimage.png"></td>
+
+            {% endif %}
+
+        </tr>
+
+        <tr>
+            <td colspan="2"><b>This was edited by: {{word_details[7]}} on the {{word_details[6]}}</b></td>
+
+        </tr>
+
+    </table>
 {% endblock %}

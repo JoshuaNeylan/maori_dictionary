@@ -12,6 +12,7 @@ app.secret_key = "sdjfi3939j93@()@jJIDJijS)09"
 
 bcrypt = Bcrypt(app)
 
+
 def create_connection(db_file):
     try:
 
@@ -58,14 +59,27 @@ def render_home():
 def render_category(category):
     con = create_connection(DB_NAME)
 
-    query = "SELECT maori, english, definition, id FROM Dictionary WHERE category = ?"
+    query = "SELECT maori, english, image, id FROM Dictionary WHERE category = ?"
 
     cur = con.cursor()
     cur.execute(query, (category,))
     category_words = cur.fetchall()
+    updated_category_words = []
+
+    for word_details in category_words:
+        word_details_list = []
+
+        for detail in word_details:
+            word_details_list.append(detail)
+
+        if word_details_list[2] is None:
+            word_details_list[2] = "noimage.png"
+        updated_category_words.append(word_details_list)
+
     con.close()
-    print(len(category_words))
-    return render_template("category.html", category=category, words=category_words, logged_in=is_logged_in())
+
+    return render_template("category.html", category=category, words=updated_category_words, logged_in=is_logged_in())
+
 
 @app.route("/saveword-<category>-<word_id>")
 def save_word(category, word_id):
@@ -95,7 +109,6 @@ def save_word(category, word_id):
             saved_word_details = cur.fetchall()
 
             if len(saved_word_details[0]) != 0:
-
                 return redirect(f"/categorys/{category}?error=Word+has+already+been+saved")
 
         except IndexError:
@@ -113,6 +126,7 @@ def save_word(category, word_id):
     con.close()
     return redirect(f"/categorys/{category}")
 
+
 @app.route("/unsaveword-<category>-<word_id>")
 def remove_saved_word(category, word_id):
     if not is_logged_in():
@@ -128,30 +142,25 @@ def remove_saved_word(category, word_id):
 
     user_id = session["user_id"]
     print(f"user id is {user_id}", word_id)
-    timestamp = date.today()
     con = create_connection(DB_NAME)
     cur = con.cursor()
 
     try:
-        query = "SELECT word_id, user_id FROM Saved_words WHERE word_id = ? and user_id = ?"
 
+        query = "SELECT word_id, user_id FROM Saved_words WHERE word_id = ? and user_id = ?"
         cur.execute(query, (word_id, user_id))
+
         try:
 
             saved_word_details = cur.fetchall()
 
             if len(saved_word_details[0]) != 0:
-
                 query = "DELETE FROM Saved_words WHERE word_id = ? and user_id = ?"
                 cur.execute(query, (word_id, user_id))
-
-
-
 
         except IndexError:
 
             return redirect(f"/saved?error=Word+isnt+saved")
-
 
     except sqlite3.IntegrityError as e:
         print(e)
@@ -162,7 +171,6 @@ def remove_saved_word(category, word_id):
     con.commit()
     con.close()
     return redirect(f"/saved")
-
 
 
 @app.route("/<category>/<word>")
@@ -184,12 +192,12 @@ def render_category_word_details(word, category):
 
         image_found = False
 
-    return render_template("word_details.html", word_details=word_details, category=category, image_found=image_found, logged_in=is_logged_in())
+    return render_template("word_details.html", word_details=word_details, category=category, image_found=image_found,
+                           logged_in=is_logged_in())
 
 
 @app.route("/login", methods=["POST", "GET"])
 def render_login():
-
     if is_logged_in():
         return redirect("/")
 
@@ -235,6 +243,7 @@ def render_login():
         error = ""
 
     return render_template("login.html", error=error, logged_in=is_logged_in(), log_in_details=log_in_details)
+
 
 @app.route('/signup', methods=["POST", "GET"])
 def render_signup():
@@ -314,8 +323,12 @@ def logout():
     print(session)
     return redirect("/?message=See+you+next+time!")
 
+
 @app.route("/saved")
 def render_saved():
+    if not is_logged_in():
+        return redirect("/")
+
     user_id = session["user_id"]
     con = create_connection(DB_NAME)
     query = "SELECT word_id, timestamp FROM Saved_words WHERE user_id = ?;"
@@ -327,21 +340,26 @@ def render_saved():
         word_ids_with_timestamps[i] = word_ids_with_timestamps[i][0], word_ids_with_timestamps[i][1]
 
     word_ids_with_timestamps = list(set(word_ids_with_timestamps))
-    print(word_ids_with_timestamps)
 
-    query = "SELECT maori, english, category, definition, id FROM Dictionary WHERE id = ?;"
+    query = "SELECT maori, english, category, image, id FROM Dictionary WHERE id = ?;"
 
     saved_words_details_list = []
 
     for word_id_with_timestamp in word_ids_with_timestamps:
         cur.execute(query, (word_id_with_timestamp[0],))
         word_details = cur.fetchall()
-        print(word_details)
+        update_word_details = []
 
-        saved_words_details_list.append([word_details[0], word_id_with_timestamp[1]])
+        for word in word_details[0]:
+            update_word_details.append(word)
 
+        if update_word_details[3] is None:
+            update_word_details[3] = "noimage.png"
 
-    return render_template("saved_words.html", categorys=category_setup(), logged_in=is_logged_in(), saved_words_details_list = saved_words_details_list)
+        saved_words_details_list.append([update_word_details, word_id_with_timestamp[1]])
+
+    return render_template("saved_words.html", categorys=category_setup(), logged_in=is_logged_in(),
+                           saved_words_details_list=saved_words_details_list)
 
 
 if __name__ == "__main__":
