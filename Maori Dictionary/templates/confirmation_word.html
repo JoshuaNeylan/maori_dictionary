@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Maōri Dictionary | Home{% endblock %}
+
+{% block heading %}Maōri - English Dictionary{% endblock %}
+
+{% block main %}
+
+    <div class="centered_group">
+
+        <h1> Are you sure you want to delete the word: {{word_in_maori}}?</h1>
+        <p>This action cannot be undone</p>
+
+        <a href="/remove/word-{{word_in_maori}}-{{word_in_english}}"><button><h1>Yes confirm</h1></button></a>
+        <a href="/"><button><h1>No go back!</h1></button></a>
+
+
+
+    </div>
+
+{% endblock %}

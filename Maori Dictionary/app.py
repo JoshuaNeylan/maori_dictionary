@@ -1,3 +1,4 @@
+# do error control for editing when changing to an invalid category and others and change categorys to categories
 import sqlite3
 from sqlite3 import Error
 from flask import Flask, render_template, request, redirect, session
@@ -219,16 +220,16 @@ def remove_saved_word(category, word_id):
     return redirect(f"/saved")
 
 
-@app.route("/<category>/<word>")
+@app.route("/<category>/<word>", methods=["POST", "GET"])
 def render_category_word_details(word, category):
     con = create_connection(DB_NAME)
 
-    query = "SELECT maori, english, category, definition, year_level, image, timestamp, author, id FROM Dictionary WHERE maori = ?"
+    query = "SELECT maori, english, category, definition, year_level, image," \
+            " timestamp, author, id FROM Dictionary WHERE maori = ?"
 
     cur = con.cursor()
     cur.execute(query, (word,))
     word_details = cur.fetchall()[0]
-    con.close()
 
     if word_details[5]:
 
@@ -238,8 +239,44 @@ def render_category_word_details(word, category):
 
         image_found = False
 
+    if request.method == "POST":
+        maori = request.form["maori"].lower()
+        english = request.form["english"].lower()
+        year_level = request.form["year_level"]
+        definition = request.form["definition"]
+        category = request.form["category"].title()
+        session["new word details"] = [maori, english, year_level, definition]
+
+        session.pop("new word details")
+
+        con = create_connection(DB_NAME)
+        first_name, last_name = session.get("first_name"), session.get("last_name")
+        author = f"{first_name} {last_name}"
+        query = "UPDATE Dictionary SET maori = ?, english = ?, category = ?, year_level = ?," \
+                " timestamp = ?, author = ?, definition = ? WHERE id = ?"
+
+        cur = con.cursor()
+        print(word_details[8])
+        cur.execute(query, (maori, english, category, year_level, date.today(), author, definition, word_details[8],))
+
+        con.commit()
+
+        con.close()
+
+        return redirect(f"/{category}/{maori}?error=Word+edited")
+
+    con.close()
+    new_word_details = session.get("new word details")
+    if new_word_details is None:
+        new_word_details = ["", "", "", ""]
+
+    error = request.args.get("error")
+
+    if error is None:
+        error = ""
+
     return render_template("word_details.html", word_details=word_details, category=category, image_found=image_found,
-                           logged_in=is_logged_in())
+                           logged_in=is_logged_in(), error=error)
 
 
 @app.route("/login", methods=["POST", "GET"])
@@ -396,15 +433,15 @@ def render_saved():
     for word_id_with_timestamp in word_ids_with_timestamps:
         cur.execute(query, (word_id_with_timestamp[0],))
         word_details = cur.fetchall()
-        update_word_details = []
+        updated_word_details = []
 
         for word in word_details[0]:
-            update_word_details.append(word)
+            updated_word_details.append(word)
 
-        if update_word_details[3] is None:
-            update_word_details[3] = "noimage.png"
+        if updated_word_details[3] is None:
+            updated_word_details[3] = "noimage.png"
 
-        saved_words_details_list.append([update_word_details, word_id_with_timestamp[1]])
+        saved_words_details_list.append([updated_word_details, word_id_with_timestamp[1]])
 
     return render_template("saved_words.html", logged_in=is_logged_in(),
                            saved_words_details_list=saved_words_details_list)
@@ -470,12 +507,21 @@ def render_add_category():
 
 
 @app.route("/confirmation/category-<category>")
-def render_confirmation(category):
-
+def render_confirmation_category(category):
     if not is_logged_in():
         return redirect("/")
 
     return render_template("confirmation_category.html", logged_in=is_logged_in(), category=category)
+
+
+@app.route("/confirmation/word-<word_in_maori>-<word_in_english>")
+def render_confirmation_word(word_in_maori, word_in_english):
+    if not is_logged_in():
+        return redirect("/")
+
+    return render_template("confirmation_word.html", logged_in=is_logged_in(),
+                           word_in_maori=word_in_maori, word_in_english=word_in_english)
+
 
 @app.route("/remove/category-<category>")
 def remove_category(category):
@@ -507,10 +553,39 @@ def remove_category(category):
     except IndexError:
         pass
 
-
     query = "DELETE FROM Dictionary WHERE category = ?"
 
-    cur.execute(query, (f"{category}",))
+    cur.execute(query, (category,))
+
+    con.commit()
+
+    con.close()
+
+    return redirect("/")
+
+
+@app.route("/remove/word-<maori>-<english>")
+def remove_word(maori, english):
+    if not is_logged_in():
+        return redirect("/")
+
+    con = create_connection(DB_NAME)
+
+    query = "SELECT id FROM Dictionary WHERE maori = ? and english = ?"
+
+    cur = con.cursor()
+
+    cur.execute(query, (maori, english))
+
+    word_id = cur.fetchall()[0][0]
+
+    query = "DELETE FROM Saved_words WHERE word_id = ?"
+
+    cur.execute(query, (word_id,))
+
+    query = "DELETE FROM Dictionary WHERE maori = ? and english = ?"
+
+    cur.execute(query, (maori, english))
 
     con.commit()
 

@@ -6,8 +6,16 @@
 
 {% block main %}
 
+      {% if logged_in %}
 
-    <div class = "h0">{{word_details[0]}}: {{word_details[1]}}</div><br>
+    <div class = "h0">{{word_details[0]}}: {{word_details[1]}} -<a href="/confirmation/word-{{word_details[0]}}-{{word_details[1]}}">Delete word</a></div>
+
+    {% else %}
+
+        <div class = "h0">{{word_details[0]}}: {{word_details[1]}}</div><br>
+
+    {% endif %}
+
     <table>
         <tr>
 
@@ -49,4 +57,49 @@
         </tr>
 
     </table>
+
+     {% if logged_in %}
+
+
+         <form class="dataForm" method = "POST">
+
+                <h1> Edit word: {{word_details[0]}}</h1>
+
+                Maori:
+
+                <input type="text" name="maori" id="maori" required value = {{word_details[0]}}>
+
+
+                <br>
+
+                 English:
+
+                <input type="text" name="english" id="english" required value = {{word_details[1]}}>
+
+                Year level word is first encountered at:
+
+                <input type="number" name="year_level" id="year_level" min = "1" max = "10" required value = {{word_details[4]}}>
+
+                Definition:
+
+                <input type="text" name="definition" id="definition" required value = {{word_details[3]}}>
+
+                <br>
+
+
+                Category:
+
+                <input type="text" name="category" id="category" required value = {{word_details[2]}}>
+
+                <br>
+
+                <br>
+
+                <input type="submit" value="Edit word" required>
+
+                 <div class = "error"> <strong> {{ error }} </strong> </div>
+        </form>
+
+    {% endif %}
+
 {% endblock %}
