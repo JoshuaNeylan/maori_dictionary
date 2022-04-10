@@ -5,9 +5,17 @@
 {% block heading %}Maōri - English Dictionary{% endblock %}
 
 {% block main %}
+    {% if logged_in %}
 
+        <h1>Words about {{ category }}: -<a href="/confirmation/category-{{category}}">Delete Category</a></h1>
+
+    {% else %}
 
     <h1> Words about {{ category }}:</h1>
+
+    {% endif %}
+
+
 
     <table>
 
@@ -35,12 +43,44 @@
             </tr>
         {% endfor %}
 
-        {% if logged_in %}
-
-
-        {% endif %}
-
     </table>
+    {% if logged_in %}
+
+
+         <form class="dataForm" method = "POST">
+
+                <h1> Add a word </h1>
+
+                Maori:
+
+                <input type="text" name="maori" id="maori" required value = {{new_word_details[0]}}>
+
+
+                <br>
+
+                 English:
+
+                <input type="text" name="english" id="english" required value = {{new_word_details[1]}}>
+
+                Year level word is first encountered at:
+
+                <input type="number" name="year_level" id="year_level" min = "1" max = "10" required value = {{new_word_details[2]}}>
+
+                Definition:
+
+                <input type="text" name="definition" id="definition" required value = {{new_word_details[3]}}>
+
+                <br>
+                <br>
+
+                <input type="submit" value="Add word" required>
+
+                 <div class = "error"> <strong> {{ error }} </strong> </div>
+        </form>
+
+    {% endif %}
+
+
 
 
 

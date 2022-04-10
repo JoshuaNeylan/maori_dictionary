@@ -53,16 +53,55 @@ def is_logged_in():
 
 @app.route('/')
 def render_home():
+    print(session)
     return render_template("home.html", categorys=category_setup(), logged_in=is_logged_in())
 
 
-@app.route("/categorys/<category>")
+@app.route("/categorys/<category>", methods=["POST", "GET"])
 def render_category(category):
     con = create_connection(DB_NAME)
+    cur = con.cursor()
+
+    if request.method == "POST":
+
+        maori = request.form["maori"].lower()
+        english = request.form["english"].lower()
+        year_level = request.form["year_level"]
+        definition = request.form["definition"]
+        session["new word details"] = [maori, english, year_level, definition]
+        query = "SELECT id FROM Dictionary WHERE maori = ? and english = ?"
+        cur.execute(query, (maori, english,))
+        try:
+
+            word_id = cur.fetchall()[0][0]
+            return redirect(f"/categorys/{category}?error=Word+already+in+dictionary")
+
+        except IndexError:
+
+            session.pop("new word details")
+
+            con = create_connection(DB_NAME)
+
+            query = "INSERT INTO Dictionary(maori, english, category, year_level, timestamp, author, definition)" \
+                    " VALUES(?, ?, ?, ?, ?, ?, ?)"
+
+            cur = con.cursor()
+
+            cur.execute(query, (maori, english, category, year_level, date.today(),
+                                f"{session.get('first_name')} {session.get('last_name')}", definition))
+
+            con.commit()
+
+            con.close()
+
+            return redirect(f"/categorys/{category}?error=Word+added")
+
+    new_word_details = session.get("new word details")
+    if new_word_details is None:
+        new_word_details = ["", "", "", ""]
 
     query = "SELECT maori, english, image, id FROM Dictionary WHERE category = ?"
 
-    cur = con.cursor()
     cur.execute(query, (category,))
     category_words = cur.fetchall()
     updated_category_words = []
@@ -79,8 +118,13 @@ def render_category(category):
 
     con.close()
 
+    error = request.args.get("error")
 
-    return render_template("category.html", category=category, words=updated_category_words, logged_in=is_logged_in())
+    if error is None:
+        error = ""
+
+    return render_template("category.html", category=category, words=updated_category_words,
+                           logged_in=is_logged_in(), error=error, new_word_details=new_word_details)
 
 
 @app.route("/saveword-<category>-<word_id>")
@@ -209,7 +253,7 @@ def render_login():
         session["log in details"] = [email, password]
         con = create_connection(DB_NAME)
 
-        query = """SELECT id, first_name, password FROM User WHERE email = ?"""
+        query = """SELECT id, first_name, last_name, password FROM User WHERE email = ?"""
 
         cur = con.cursor()
 
@@ -220,7 +264,8 @@ def render_login():
         try:
             user_id = user_data[0][0]
             first_name = user_data[0][1]
-            db_password = user_data[0][2]
+            last_name = user_data[0][2]
+            db_password = user_data[0][3]
 
         except IndexError:
             return redirect("/login?error=Email+or+password+is+incorrect")
@@ -231,6 +276,7 @@ def render_login():
         session["email"] = email
         session["user_id"] = user_id
         session["first_name"] = first_name
+        session["last_name"] = last_name
         session.pop("log in details")
 
         return redirect("/")
@@ -360,13 +406,12 @@ def render_saved():
 
         saved_words_details_list.append([update_word_details, word_id_with_timestamp[1]])
 
-    return render_template("saved_words.html", logged_in=is_logged_in(),saved_words_details_list=saved_words_details_list)
+    return render_template("saved_words.html", logged_in=is_logged_in(),
+                           saved_words_details_list=saved_words_details_list)
 
 
 @app.route('/addcategory', methods=["POST", "GET"])
 def render_add_category():
-
-
     incorrect_characters_string = """<>{}[]\/,|"""
 
     category_list = category_setup()
@@ -392,7 +437,8 @@ def render_add_category():
                     pass
 
                 else:
-                    return redirect(f"/addcategory?error=This+category+is+similar+to+{category}.+resubmit+to+add+anyways")
+                    return redirect(
+                        f"/addcategory?error=This+category+is+similar+to+{category}.+resubmit+to+add+anyways")
 
         session.pop("new_category")
 
@@ -420,9 +466,57 @@ def render_add_category():
     if error is None:
         error = ""
 
+    return render_template("addcategory.html", logged_in=is_logged_in(), new_category=new_category, error=error)
 
-    return render_template("addcategory.html", logged_in=is_logged_in(), new_category = new_category, error = error)
 
+@app.route("/confirmation/category-<category>")
+def render_confirmation(category):
+
+    if not is_logged_in():
+        return redirect("/")
+
+    return render_template("confirmation_category.html", logged_in=is_logged_in(), category=category)
+
+@app.route("/remove/category-<category>")
+def remove_category(category):
+    if not is_logged_in():
+        return redirect("/")
+
+    con = create_connection(DB_NAME)
+
+    query = "DELETE FROM Categories WHERE category_name = ?"
+
+    cur = con.cursor()
+
+    cur.execute(query, (category,))
+
+    query = "SELECT id FROM Dictionary WHERE category = ?"
+
+    cur.execute(query, (category,))
+
+    try:
+
+        words_that_need_to_be_remove = cur.fetchall()
+        print(words_that_need_to_be_remove)
+
+        for word in words_that_need_to_be_remove:
+            query = "DELETE FROM Saved_words WHERE word_id = ?"
+
+            cur.execute(query, (word[0],))
+
+    except IndexError:
+        pass
+
+
+    query = "DELETE FROM Dictionary WHERE category = ?"
+
+    cur.execute(query, (f"{category}",))
+
+    con.commit()
+
+    con.close()
+
+    return redirect("/")
 
 
 if __name__ == "__main__":
