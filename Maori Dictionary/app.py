@@ -30,11 +30,12 @@ def create_connection(db_file):
 def category_setup():
     con = create_connection(DB_NAME)
 
-    query = "SELECT category FROM Dictionary"
+    query = "SELECT category_name FROM Categories"
 
     cur = con.cursor()
     cur.execute(query)
     category_list = cur.fetchall()
+
     con.close()
     for i in range(len(category_list)):
         category_list[i] = category_list[i][0].title()
@@ -77,6 +78,7 @@ def render_category(category):
         updated_category_words.append(word_details_list)
 
     con.close()
+
 
     return render_template("category.html", category=category, words=updated_category_words, logged_in=is_logged_in())
 
@@ -295,7 +297,7 @@ def render_signup():
             cur.execute(query, (fname, lname, email, hashed_password))
 
         except sqlite3.IntegrityError:
-            return redirect("/signup?error=Email+is+already+used?details={}")
+            return redirect(f"/signup?error=Email+is+already+used")
 
         con.commit()
 
@@ -358,8 +360,69 @@ def render_saved():
 
         saved_words_details_list.append([update_word_details, word_id_with_timestamp[1]])
 
-    return render_template("saved_words.html", categorys=category_setup(), logged_in=is_logged_in(),
-                           saved_words_details_list=saved_words_details_list)
+    return render_template("saved_words.html", logged_in=is_logged_in(),saved_words_details_list=saved_words_details_list)
+
+
+@app.route('/addcategory', methods=["POST", "GET"])
+def render_add_category():
+
+
+    incorrect_characters_string = """<>{}[]\/,|"""
+
+    category_list = category_setup()
+
+    if not is_logged_in():
+        return redirect("/")
+
+    if request.method == "POST":
+        session["new_category"] = request.form.get("category").title().replace(" ", "_")
+        new_category = session.get("new_category")
+        for char in incorrect_characters_string:
+            if char in new_category:
+                return redirect("/addcategory?error=Invalid+characters+in+category+name")
+
+        for category in category_list:
+
+            if new_category == category:
+                return redirect("/addcategory?error=This+category+already+exists")
+
+            elif new_category in category:
+
+                if "category is similar" in f'{request.args.get("error")}':
+                    pass
+
+                else:
+                    return redirect(f"/addcategory?error=This+category+is+similar+to+{category}.+resubmit+to+add+anyways")
+
+        session.pop("new_category")
+
+        con = create_connection(DB_NAME)
+
+        query = "INSERT INTO Categories(category_name) VALUES(?)"
+
+        cur = con.cursor()
+
+        cur.execute(query, (new_category,))
+
+        con.commit()
+
+        con.close()
+
+        return redirect("/addcategory?error=Category+added")
+
+    new_category = session.get("new_category")
+
+    if new_category is None:
+        new_category = ""
+
+    error = request.args.get("error")
+
+    if error is None:
+        error = ""
+
+
+    return render_template("addcategory.html", logged_in=is_logged_in(), new_category = new_category, error = error)
+
 
 
 if __name__ == "__main__":

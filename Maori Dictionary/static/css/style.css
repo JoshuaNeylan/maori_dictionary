@@ -81,6 +81,7 @@ table {
     width: 50%;
     border: 2px solid #666;
     border-collapse: collapse;
+
 }
 
 th, td {
@@ -187,9 +188,10 @@ main a:hover {
     display: inline;
 }
 
-.category_buttons {
-
+.centered_group {
+    text-align: center;
     margin: auto;
     width: 70%;
+    padding-bottom: 10vh;
 
 }

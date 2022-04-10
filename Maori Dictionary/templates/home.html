@@ -7,13 +7,18 @@
 {% block main %}
 
 
-    <div class="category_buttons">
+    <div class="centered_group">
         {% for category in categorys %}
 
             <a href="/categorys/{{ category }}"><button><h1>{{ category }}</h1></button></a>
 
         {% endfor %}
 
+        {% if logged_in %}
+
+             <a href="/addcategory"><button><h1>Add category</h1></button></a>
+
+        {% endif %}
     </div>
 
 
