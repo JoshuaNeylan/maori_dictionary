@@ -1,4 +1,4 @@
-# do error control for editing when changing to an invalid category and others and change categorys to categories
+# do have input fill ins be more than one word and change categorys to categories
 import sqlite3
 from sqlite3 import Error
 from flask import Flask, render_template, request, redirect, session
@@ -51,6 +51,22 @@ def is_logged_in():
 
     return True
 
+def is_admin():
+    if session.get("email") is None:
+        return False
+    con = create_connection(DB_NAME)
+    cur = con.cursor()
+    query = """SELECT id FROM admin WHERE user_id = ?"""
+    cur.execute(query, (session.get("user_id"),))
+    if len(cur.fetchall()) == 1:
+
+        con.close()
+        return True
+
+    con.close()
+    return False
+
+
 
 @app.route('/')
 def render_home():
@@ -62,6 +78,10 @@ def render_home():
 def render_category(category):
     con = create_connection(DB_NAME)
     cur = con.cursor()
+
+    category_list = category_setup()
+    if category not in category_list:
+        return redirect(f"/?error=category+not+in+dictionary")
 
     if request.method == "POST":
 
@@ -125,7 +145,8 @@ def render_category(category):
         error = ""
 
     return render_template("category.html", category=category, words=updated_category_words,
-                           logged_in=is_logged_in(), error=error, new_word_details=new_word_details)
+                           logged_in=is_logged_in(), error=error, new_word_details=new_word_details
+                           , is_admin=is_admin())
 
 
 @app.route("/saveword-<category>-<word_id>")
@@ -142,7 +163,6 @@ def save_word(category, word_id):
         return redirect("/categorys/<category>?error=Invalid+word+id")
 
     user_id = session["user_id"]
-    print(f"user id is {user_id}", word_id)
     timestamp = date.today()
     con = create_connection(DB_NAME)
     cur = con.cursor()
@@ -229,7 +249,11 @@ def render_category_word_details(word, category):
 
     cur = con.cursor()
     cur.execute(query, (word,))
-    word_details = cur.fetchall()[0]
+    try:
+        word_details = cur.fetchall()[0]
+
+    except IndexError:
+        return redirect(f"/categorys/{category}?error=word+not+in+dictionary")
 
     if word_details[5]:
 
@@ -247,21 +271,39 @@ def render_category_word_details(word, category):
         category = request.form["category"].title()
         session["new word details"] = [maori, english, year_level, definition]
 
-        session.pop("new word details")
+        category_list = category_setup()
+
+        if category not in category_list:
+            return redirect(f"/{category}/{word_details[0]}?error=category+not+in+dictionary")
 
         con = create_connection(DB_NAME)
+        cur = con.cursor()
         first_name, last_name = session.get("first_name"), session.get("last_name")
         author = f"{first_name} {last_name}"
+
+        query = "SELECT id FROM Dictionary WHERE maori = ? and english = ?"
+
+        cur.execute(query, (maori, english))
+
+        try:
+
+            word_with_same_details_in_dictionary = cur.fetchall()[0][0]
+            if word_with_same_details_in_dictionary != word_details[
+                8] and word_with_same_details_in_dictionary is not None:
+                return redirect(f"/{category}/{word_details[0]}?error=Word+already+in+dictionary")
+        except IndexError:
+            pass
+
         query = "UPDATE Dictionary SET maori = ?, english = ?, category = ?, year_level = ?," \
                 " timestamp = ?, author = ?, definition = ? WHERE id = ?"
 
-        cur = con.cursor()
-        print(word_details[8])
         cur.execute(query, (maori, english, category, year_level, date.today(), author, definition, word_details[8],))
 
         con.commit()
 
         con.close()
+
+        session.pop("new word details")
 
         return redirect(f"/{category}/{maori}?error=Word+edited")
 
@@ -276,7 +318,7 @@ def render_category_word_details(word, category):
         error = ""
 
     return render_template("word_details.html", word_details=word_details, category=category, image_found=image_found,
-                           logged_in=is_logged_in(), error=error)
+                           logged_in=is_logged_in(), error=error, is_admin=is_admin())
 
 
 @app.route("/login", methods=["POST", "GET"])
@@ -296,6 +338,7 @@ def render_login():
 
         cur.execute(query, (email,))
         user_data = cur.fetchall()
+
         con.close()
 
         try:
@@ -315,7 +358,6 @@ def render_login():
         session["first_name"] = first_name
         session["last_name"] = last_name
         session.pop("log in details")
-
         return redirect("/")
 
     log_in_details = session.get("log in details")
@@ -387,7 +429,7 @@ def render_signup():
         con.close()
 
         [session.pop(key) for key in list(session.keys())]
-        print(session)
+
         return redirect("login")
     signup_details = session.get("sign up details")
 
@@ -453,8 +495,8 @@ def render_add_category():
 
     category_list = category_setup()
 
-    if not is_logged_in():
-        return redirect("/")
+    if not is_logged_in() or not is_admin():
+        return redirect(f"/?error=You+do+not+have+permission+to+add+categories")
 
     if request.method == "POST":
         session["new_category"] = request.form.get("category").title().replace(" ", "_")
@@ -508,16 +550,30 @@ def render_add_category():
 
 @app.route("/confirmation/category-<category>")
 def render_confirmation_category(category):
-    if not is_logged_in():
-        return redirect("/")
+    if not is_logged_in() or not is_admin():
+        return redirect(f"/?error=You+do+not+have+permission+to+remove+categories")
+
+    category_list = category_setup()
+    if category not in category_list:
+        return redirect(f"/?error=category+not+in+dictionary")
 
     return render_template("confirmation_category.html", logged_in=is_logged_in(), category=category)
 
 
 @app.route("/confirmation/word-<word_in_maori>-<word_in_english>")
 def render_confirmation_word(word_in_maori, word_in_english):
-    if not is_logged_in():
-        return redirect("/")
+    if not is_logged_in() or not is_admin():
+        return redirect(f"/?error=You+do+not+have+permission+to+remove+{word_in_maori}")
+
+    query = "SELECT maori, english FROM Dictionary WHERE maori = ? and english = ?"
+    con = create_connection(DB_NAME)
+    cur = con.cursor()
+    cur.execute(query, (word_in_maori, word_in_english))
+    try:
+        word_details = cur.fetchall()[0]
+
+    except IndexError:
+        return redirect(f"/?error=word+not+in+dictionary")
 
     return render_template("confirmation_word.html", logged_in=is_logged_in(),
                            word_in_maori=word_in_maori, word_in_english=word_in_english)
@@ -525,8 +581,8 @@ def render_confirmation_word(word_in_maori, word_in_english):
 
 @app.route("/remove/category-<category>")
 def remove_category(category):
-    if not is_logged_in():
-        return redirect("/")
+    if not is_logged_in() or not is_admin():
+        return redirect(f"/?error=You+do+not+have+permission+to+remove+{category}")
 
     con = create_connection(DB_NAME)
 
@@ -566,8 +622,8 @@ def remove_category(category):
 
 @app.route("/remove/word-<maori>-<english>")
 def remove_word(maori, english):
-    if not is_logged_in():
-        return redirect("/")
+    if not is_logged_in() or not is_admin():
+        return redirect(f"/?error=You+do+not+have+permission+to+remove+{maori}")
 
     con = create_connection(DB_NAME)
 
@@ -576,8 +632,12 @@ def remove_word(maori, english):
     cur = con.cursor()
 
     cur.execute(query, (maori, english))
+    try:
 
-    word_id = cur.fetchall()[0][0]
+        word_id = cur.fetchall()[0][0]
+
+    except IndexError:
+        return redirect(f"/?error=word+not+in+dictionary")
 
     query = "DELETE FROM Saved_words WHERE word_id = ?"
 

@@ -44,7 +44,7 @@
         {% endfor %}
 
     </table>
-    {% if logged_in %}
+    {% if logged_in and is_admin %}
 
 
          <form class="dataForm" method = "POST">
@@ -53,14 +53,14 @@
 
                 Maori:
 
-                <input type="text" name="maori" id="maori" required value = {{new_word_details[0]}}>
+                <input type="text" name="maori" id="maori" maxlength="85" required value = {{new_word_details[0]}}>
 
 
                 <br>
 
                  English:
 
-                <input type="text" name="english" id="english" required value = {{new_word_details[1]}}>
+                <input type="text" name="english" id="english" maxlength="100" required value = {{new_word_details[1]}}>
 
                 Year level word is first encountered at:
 
@@ -68,7 +68,7 @@
 
                 Definition:
 
-                <input type="text" name="definition" id="definition" required value = {{new_word_details[3]}}>
+                <input type="text" name="definition" id="definition" maxlength="200" required value = {{new_word_details[3]}}>
 
                 <br>
                 <br>
