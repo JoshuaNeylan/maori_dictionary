@@ -89,7 +89,6 @@ def is_teacher():
 # function executes when user is on the home page
 @app.route('/')
 def render_home():
-
     # renders the homepage for the user looking at the website
     return render_template("home.html", categories=category_setup(), logged_in=is_logged_in(), is_teacher=is_teacher(),
                            first_name=session.get("first_name"))
@@ -104,21 +103,29 @@ def render_category(category):
 
     # checks if the category the user is attempting to look at is in the dictionary
     category_list = category_setup()
+
+    # if the category is not in the dictionary the user is redirected to the homepage with a corresponding error
     if category not in category_list:
-        # if the category is not in the dictionary the user is redirected to the homepage with a corresponding error
         return redirect(f"/?error=category+not+in+dictionary")
 
+    # keeps new category inputs fill if user made an error when adding new category
     new_word_details = session.get("new word details")
     if new_word_details is None:
         new_word_details = ["", "", "", ""]
 
+    # creates a request to get all words that are the category the user is looking at in the dictionary
     query = "SELECT maori, english, image, id FROM Dictionary WHERE category = ?"
 
+    # executes the request
     cur.execute(query, (category,))
-    category_words = cur.fetchall()
-    updated_category_words = []
 
-    for word_details in category_words:
+    # creates variables for the current category words and updated(improved to be easier to work with) category words
+    list_of_category_words = cur.fetchall()
+    updated_list_of_category_words = []
+
+    # improves the current list filled with category words by removing unnecessary nesting and adding
+    # an image for words without them
+    for word_details in list_of_category_words:
         word_details_list = []
 
         for detail in word_details:
@@ -126,16 +133,17 @@ def render_category(category):
 
         if word_details_list[2] is None:
             word_details_list[2] = "noimage.png"
-        updated_category_words.append(word_details_list)
+        updated_list_of_category_words.append(word_details_list)
 
-    con.close()
-
+    # makes a variable to display the current error (if there is one) on the page
     error = request.args.get("error")
 
     if error is None:
         error = ""
 
-    # if user is attempting to add a word to the dictionary
+    #############################################################
+    # if the user is attempting to add a word to the dictionary:#
+    #############################################################
     if request.method == "POST":
 
         # creates a variable for each word detail and a list containing new word's details
@@ -146,6 +154,16 @@ def render_category(category):
 
         # this word detail list is used to keep the details a user has typed if they got an error
         session["new word details"] = [maori, english, year_level, definition]
+
+        # creates a string with characters that we don't want appearing in the url
+        incorrect_characters_string = """<>{}[]\/,|"""
+
+        # checks if any of the characters we don't want in the url are the maori part of the word
+        for char in incorrect_characters_string:
+            if char in maori:
+                # if characters we don't want in the url are the maori part of the word then
+                # return the to the category page with the corresponding error
+                return redirect(f"/categories/{category}?error=Invalid+characters+in+maori")
 
         # check if word is in dictionary already
         query = "SELECT id FROM Dictionary WHERE maori = ? and english = ?"
@@ -162,6 +180,7 @@ def render_category(category):
             # if word isn't in dictionary continue attempting to add the word
 
             # removes the word detail list from the users current session since word will be successfully added
+            # (Clears the inputs incase the user wants to add another word)
             session.pop("new word details")
 
             # creates a connection to the database and creates a cursor that can be used for the connection
@@ -182,23 +201,29 @@ def render_category(category):
 
             return redirect(f"/categories/{category}?error=Word+added")
 
-    return render_template("category.html", category=category, words=updated_category_words,
+    # closes connection to the database
+    con.close()
+
+    # renders the category page for the user looking at the website
+    return render_template("category.html", category=category, words=updated_list_of_category_words,
                            logged_in=is_logged_in(), error=error, new_word_details=new_word_details
                            , is_teacher=is_teacher())
 
 
+# function executes when user attempts to save a word
 @app.route("/saveword-<category>-<word_id>")
 def save_word(category, word_id):
+    print(category)
+    # returns the user to the homepage if they are not logg
     if not is_logged_in():
-        return redirect("/")
+        return redirect(f"/categories/{category}?error=not+logged+in")
 
     try:
         word_id = int(word_id)
     except ValueError:
 
         print(f"{word_id} isn't an interger")
-
-        return redirect("/categories/<category>?error=Invalid+word+id")
+        return redirect(f"/categories/{category}?error=Invalid+word+id")
 
     user_id = session["user_id"]
     timestamp = date.today()
@@ -229,7 +254,7 @@ def save_word(category, word_id):
 
     con.commit()
     con.close()
-    return redirect(f"/categories/{category}")
+    return redirect(f"/categories/{category}?message=word+saved")
 
 
 @app.route("/unsaveword-<category>-<word_id>")
@@ -308,6 +333,16 @@ def render_category_word_details(word, category):
         definition = request.form["definition"]
         category = request.form["category"].title()
         session["new word details"] = [maori, english, year_level, definition]
+
+        # creates a string with characters that we don't want appearing in the url
+        incorrect_characters_string = """<>{}[]\/,|"""
+
+        # checks if any of the characters we don't want in the url are the maori part of the word
+        for char in incorrect_characters_string:
+            if char in maori:
+                # if characters we don't want in the url are the maori part of the word then
+                # return the to the page for the word they were trying to edit with the corresponding error
+                return redirect(f"/{category}/{word_details[0]}?error=Invalid+characters+in+maori")
 
         category_list = category_setup()
 
@@ -543,7 +578,7 @@ def render_add_category():
         return redirect(f"/?error=You+do+not+have+permission+to+add+categories")
 
     if request.method == "POST":
-        session["new_category"] = request.form.get("category").title().replace(" ", "_")
+        session["new_category"] = request.form.get("category").title()
         new_category = session.get("new_category")
         for char in incorrect_characters_string:
             if char in new_category:
@@ -554,7 +589,7 @@ def render_add_category():
             if new_category == category:
                 return redirect("/addcategory?error=This+category+already+exists")
 
-            elif new_category in category:
+            elif new_category in category or category in new_category:
 
                 if "category is similar" in f'{request.args.get("error")}':
                     pass
