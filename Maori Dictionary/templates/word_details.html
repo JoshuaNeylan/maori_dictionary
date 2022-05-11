@@ -6,7 +6,7 @@
 
 {% block main %}
 
-      {% if logged_in %}
+      {% if logged_in and is_teacher %}
 
     <div class = "h0">{{word_details[0]}}: {{word_details[1]}} -<a href="/confirmation/word-{{word_details[0]}}-{{word_details[1]}}">Delete word</a></div>
 
@@ -58,7 +58,7 @@
 
     </table>
 
-     {% if logged_in and is_admin %}
+     {% if logged_in and is_teacher %}
 
 
          <form class="dataForm" method = "POST">

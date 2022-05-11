@@ -41,10 +41,20 @@
             <br>
             <br>
 
+            <div class="centered_group">
+                <p>Are you a teacher or a student?</p>
+            </div>
+            <div class="formRow">
+
+                    <input type = "radio" name = "teacher_or_student" id = "teacher" required  value = "teacher">
+                    <label for="teacher">Teacher</label>
+                    <input type = "radio" name = "teacher_or_student" id = "student" required  value = "student">
+                    <label for="teacher">Student</label>
+            </div>
+            <br>
+            <br>
             <input type="submit" value="Login" required>
 
-
-         <p><br> <br> <br> If you don't have an account please <a href="/signup">Sign up</a>.</p>
             <div class = "error"> <strong> {{ error }} </strong> </div>
 
     </form>

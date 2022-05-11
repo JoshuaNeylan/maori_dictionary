@@ -1,20 +1,26 @@
-# do have input fill ins be more than one word and change categorys to categories
+# Imports modules needed for website and database
 import sqlite3
 from sqlite3 import Error
 from flask import Flask, render_template, request, redirect, session
-
 from flask_bcrypt import Bcrypt
 from datetime import date
 
+# creating a variable for database
 DB_NAME = "maori_dictionary.db"
 
+# creates flask instance
 app = Flask(__name__)
+
+# sets the secret key which is used to help protect session cookies
 app.secret_key = "sdjfi3939j93@()@jJIDJijS)09"
 
+# creates a Bcrypt class container which can be used to hash and check hashed passwords
 bcrypt = Bcrypt(app)
 
 
+# function for creating a connection to the maori dictionary database
 def create_connection(db_file):
+    # connects to the database unless an error occurs where it will instead print the error and return nothing
     try:
 
         connection = sqlite3.connect(db_file)
@@ -28,94 +34,79 @@ def create_connection(db_file):
     return None
 
 
+# function for getting category names from Categories table, putting them into a sorted list and returning them
+
 def category_setup():
+    # connects to database
     con = create_connection(DB_NAME)
 
+    # fetches category names from Categories table, puts them into a list then closes connection
     query = "SELECT category_name FROM Categories"
-
     cur = con.cursor()
     cur.execute(query)
     category_list = cur.fetchall()
-
     con.close()
+
+    # titles and sorts entries in list and returns the list
     for i in range(len(category_list)):
         category_list[i] = category_list[i][0].title()
     category_list = sorted(list(set(category_list)))
-
     return category_list
 
 
+# function the checks if user is logged in
 def is_logged_in():
+    # returns true if user is logged in
     if session.get("email") is None:
         return False
 
     return True
 
-def is_admin():
+
+# function that checks if user is a teacher
+def is_teacher():
+    # checks if user is logged in
     if session.get("email") is None:
         return False
+
+    # connects to the database and checks if user id is in the teacher table
     con = create_connection(DB_NAME)
     cur = con.cursor()
-    query = """SELECT id FROM admin WHERE user_id = ?"""
+    query = """SELECT id FROM Teachers WHERE user_id = ?"""
     cur.execute(query, (session.get("user_id"),))
-    if len(cur.fetchall()) == 1:
 
+    # if the user id is in the teacher table the function returns true otherwise it returns false
+    if len(cur.fetchall()) == 1:
+        # closes connection to database and returns true
         con.close()
         return True
 
+    # closes connection to database and returns false
     con.close()
     return False
 
 
-
+# function executes when user is on the home page
 @app.route('/')
 def render_home():
-    print(session)
-    return render_template("home.html", categorys=category_setup(), logged_in=is_logged_in())
+
+    # renders the homepage for the user looking at the website
+    return render_template("home.html", categories=category_setup(), logged_in=is_logged_in(), is_teacher=is_teacher(),
+                           first_name=session.get("first_name"))
 
 
-@app.route("/categorys/<category>", methods=["POST", "GET"])
+# function executes when user attempts to look at a category
+@app.route("/categories/<category>", methods=["POST", "GET"])
 def render_category(category):
+    # creates a connection to the database and creates a cursor that can be used for the connection
     con = create_connection(DB_NAME)
     cur = con.cursor()
 
+    # checks if the category the user is attempting to look at is in the dictionary
     category_list = category_setup()
     if category not in category_list:
+        # if the category is not in the dictionary the user is redirected to the homepage with a corresponding error
         return redirect(f"/?error=category+not+in+dictionary")
-
-    if request.method == "POST":
-
-        maori = request.form["maori"].lower()
-        english = request.form["english"].lower()
-        year_level = request.form["year_level"]
-        definition = request.form["definition"]
-        session["new word details"] = [maori, english, year_level, definition]
-        query = "SELECT id FROM Dictionary WHERE maori = ? and english = ?"
-        cur.execute(query, (maori, english,))
-        try:
-
-            word_id = cur.fetchall()[0][0]
-            return redirect(f"/categorys/{category}?error=Word+already+in+dictionary")
-
-        except IndexError:
-
-            session.pop("new word details")
-
-            con = create_connection(DB_NAME)
-
-            query = "INSERT INTO Dictionary(maori, english, category, year_level, timestamp, author, definition)" \
-                    " VALUES(?, ?, ?, ?, ?, ?, ?)"
-
-            cur = con.cursor()
-
-            cur.execute(query, (maori, english, category, year_level, date.today(),
-                                f"{session.get('first_name')} {session.get('last_name')}", definition))
-
-            con.commit()
-
-            con.close()
-
-            return redirect(f"/categorys/{category}?error=Word+added")
 
     new_word_details = session.get("new word details")
     if new_word_details is None:
@@ -144,9 +135,56 @@ def render_category(category):
     if error is None:
         error = ""
 
+    # if user is attempting to add a word to the dictionary
+    if request.method == "POST":
+
+        # creates a variable for each word detail and a list containing new word's details
+        maori = request.form["maori"].lower()
+        english = request.form["english"].lower()
+        year_level = request.form["year_level"]
+        definition = request.form["definition"]
+
+        # this word detail list is used to keep the details a user has typed if they got an error
+        session["new word details"] = [maori, english, year_level, definition]
+
+        # check if word is in dictionary already
+        query = "SELECT id FROM Dictionary WHERE maori = ? and english = ?"
+        cur.execute(query, (maori, english,))
+        try:
+
+            word_id = cur.fetchall()[0][0]
+
+            # if word is in dictionary return them to the category page they were looking at with corresponding error
+            return redirect(f"/categories/{category}?error=Word+already+in+dictionary")
+
+        except IndexError:
+
+            # if word isn't in dictionary continue attempting to add the word
+
+            # removes the word detail list from the users current session since word will be successfully added
+            session.pop("new word details")
+
+            # creates a connection to the database and creates a cursor that can be used for the connection
+            con = create_connection(DB_NAME)
+            cur = con.cursor()
+
+            # creates a request to add the new word and its details to the dictionary table
+            query = "INSERT INTO Dictionary(maori, english, category, year_level, timestamp, author, definition)" \
+                    " VALUES(?, ?, ?, ?, ?, ?, ?)"
+
+            # executes the request then commits request
+            cur.execute(query, (maori, english, category, year_level, date.today(),
+                                f"{session.get('first_name')} {session.get('last_name')}", definition))
+            con.commit()
+
+            # closes connection to database and shows them a word added message
+            con.close()
+
+            return redirect(f"/categories/{category}?error=Word+added")
+
     return render_template("category.html", category=category, words=updated_category_words,
                            logged_in=is_logged_in(), error=error, new_word_details=new_word_details
-                           , is_admin=is_admin())
+                           , is_teacher=is_teacher())
 
 
 @app.route("/saveword-<category>-<word_id>")
@@ -160,7 +198,7 @@ def save_word(category, word_id):
 
         print(f"{word_id} isn't an interger")
 
-        return redirect("/categorys/<category>?error=Invalid+word+id")
+        return redirect("/categories/<category>?error=Invalid+word+id")
 
     user_id = session["user_id"]
     timestamp = date.today()
@@ -176,7 +214,7 @@ def save_word(category, word_id):
             saved_word_details = cur.fetchall()
 
             if len(saved_word_details[0]) != 0:
-                return redirect(f"/categorys/{category}?error=Word+has+already+been+saved")
+                return redirect(f"/categories/{category}?error=Word+has+already+been+saved")
 
         except IndexError:
 
@@ -187,11 +225,11 @@ def save_word(category, word_id):
         print(e)
         print("Problem Inserting into database - foreign key!")
         con.close()
-        return redirect(f"/categorys/{category}?error=Invalid+word+id")
+        return redirect(f"/categories/{category}?error=Invalid+word+id")
 
     con.commit()
     con.close()
-    return redirect(f"/categorys/{category}")
+    return redirect(f"/categories/{category}")
 
 
 @app.route("/unsaveword-<category>-<word_id>")
@@ -253,7 +291,7 @@ def render_category_word_details(word, category):
         word_details = cur.fetchall()[0]
 
     except IndexError:
-        return redirect(f"/categorys/{category}?error=word+not+in+dictionary")
+        return redirect(f"/categories/{category}?error=word+not+in+dictionary")
 
     if word_details[5]:
 
@@ -318,7 +356,7 @@ def render_category_word_details(word, category):
         error = ""
 
     return render_template("word_details.html", word_details=word_details, category=category, image_found=image_found,
-                           logged_in=is_logged_in(), error=error, is_admin=is_admin())
+                           logged_in=is_logged_in(), error=error, is_teacher=is_teacher())
 
 
 @app.route("/login", methods=["POST", "GET"])
@@ -384,7 +422,7 @@ def render_signup():
         email = request.form.get("email").title().lower()
         password = request.form.get("password").strip()
         password2 = request.form.get("password2").strip()
-
+        is_teacher_or_student = request.form.get("teacher_or_student")
         session["sign up details"] = [fname, lname, email, password, password2]
 
         incorrect_characters_string = """<>{}[]\/,|"""
@@ -424,6 +462,12 @@ def render_signup():
         except sqlite3.IntegrityError:
             return redirect(f"/signup?error=Email+is+already+used")
 
+        query = "SELECT id FROM User WHERE email = ?"
+        cur.execute(query, (email,))
+        user_id = cur.fetchall()[0][0]
+        if is_teacher_or_student == "teacher":
+            query = "INSERT INTO Teachers(id, user_id) VALUES(Null, ?)"
+            cur.execute(query, (user_id,))
         con.commit()
 
         con.close()
@@ -495,7 +539,7 @@ def render_add_category():
 
     category_list = category_setup()
 
-    if not is_logged_in() or not is_admin():
+    if not is_logged_in() or not is_teacher():
         return redirect(f"/?error=You+do+not+have+permission+to+add+categories")
 
     if request.method == "POST":
@@ -550,7 +594,7 @@ def render_add_category():
 
 @app.route("/confirmation/category-<category>")
 def render_confirmation_category(category):
-    if not is_logged_in() or not is_admin():
+    if not is_logged_in() or not is_teacher():
         return redirect(f"/?error=You+do+not+have+permission+to+remove+categories")
 
     category_list = category_setup()
@@ -562,7 +606,7 @@ def render_confirmation_category(category):
 
 @app.route("/confirmation/word-<word_in_maori>-<word_in_english>")
 def render_confirmation_word(word_in_maori, word_in_english):
-    if not is_logged_in() or not is_admin():
+    if not is_logged_in() or not is_teacher():
         return redirect(f"/?error=You+do+not+have+permission+to+remove+{word_in_maori}")
 
     query = "SELECT maori, english FROM Dictionary WHERE maori = ? and english = ?"
@@ -581,7 +625,7 @@ def render_confirmation_word(word_in_maori, word_in_english):
 
 @app.route("/remove/category-<category>")
 def remove_category(category):
-    if not is_logged_in() or not is_admin():
+    if not is_logged_in() or not is_teacher():
         return redirect(f"/?error=You+do+not+have+permission+to+remove+{category}")
 
     con = create_connection(DB_NAME)
@@ -622,7 +666,7 @@ def remove_category(category):
 
 @app.route("/remove/word-<maori>-<english>")
 def remove_word(maori, english):
-    if not is_logged_in() or not is_admin():
+    if not is_logged_in() or not is_teacher():
         return redirect(f"/?error=You+do+not+have+permission+to+remove+{maori}")
 
     con = create_connection(DB_NAME)

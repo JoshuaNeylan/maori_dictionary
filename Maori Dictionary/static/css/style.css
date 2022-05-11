@@ -181,7 +181,7 @@ main a:hover {
 
 .formRow {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid: "a b c d";
     margin: 0.5rem 0;
 }
 .dataForm p input {

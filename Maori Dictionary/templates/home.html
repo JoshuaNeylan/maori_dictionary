@@ -6,15 +6,17 @@
 
 {% block main %}
 
-
+    {% if logged_in %}
+        <h1>Welcome {{first_name}}!</h1>
+    {% endif %}
     <div class="centered_group">
-        {% for category in categorys %}
+        {% for category in categories %}
 
-            <a href="/categorys/{{ category }}"><button><h1>{{ category }}</h1></button></a>
+            <a href="/categories/{{ category }}"><button><h1>{{ category }}</h1></button></a>
 
         {% endfor %}
 
-        {% if logged_in %}
+        {% if logged_in and is_teacher %}
 
              <a href="/addcategory"><button><h1>Add category</h1></button></a>
 
