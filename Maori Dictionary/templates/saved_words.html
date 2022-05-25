@@ -22,11 +22,11 @@
         {% for word_details in saved_words_details_list %}
             <tr>
 
-                <td><a href = "/{{word_details[0][2]}}/{{word_details[0][4]}}">{{word_details[0][0]}}</a></td>
+                <td><a href = "/{{word_details[0][5]}}/{{word_details[0][4]}}">{{word_details[0][0]}}</a></td>
                 <td> {{word_details[0][1]}} </td>
                 <td><img class = "thumb" src = "../static/images/{{word_details[0][3]}}"></td>
                 <td>This word was saved: {{word_details[1]}}</td>
-                <td><a href = "/remove_saved_word-{{word_details[0][2]}}-{{word_details[0][4]}}">Remove word from saved</a></td>
+                <td><a href = "/remove_saved_word-{{word_details[0][4]}}">Remove word from saved</a></td>
 
             </tr>
 

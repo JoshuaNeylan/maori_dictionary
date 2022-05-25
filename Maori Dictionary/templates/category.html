@@ -5,13 +5,13 @@
 {% block heading %}Maōri - English Dictionary{% endblock %}
 
 {% block main %}
-    {% if logged_in and is_teacher %}
+    {% if is_teacher %}
 
-        <h1>Words about {{ category }}: -<a href="/confirmation/category-{{category}}">Delete Category</a></h1>
+        <h1>Words about {{ category_name_with_id[1] }}: -<a href="/confirmation/category-{{category_name_with_id[0]}}">Delete Category</a></h1>
 
     {% else %}
 
-    <h1> Words about {{ category }}:</h1>
+    <h1> Words about {{ category_name_with_id[1] }}:</h1>
 
     {% endif %}
 
@@ -33,11 +33,11 @@
         {% for word in words %}
 
             <tr>
-                <td><a href = "/{{category}}/{{word[3]}}">{{word[0]}}</a> </td>
+                <td><a href = "/{{category_name_with_id[0]}}/{{word[3]}}">{{word[0]}}</a> </td>
                 <td>{{word[1]}}</td>
                 <td><img class = "thumb" src = "../static/images/{{word[2]}}"></td>
                 {% if logged_in %}
-                    <td><a href="/saveword-{{category}}-{{word[3]}}">Save word</a> </td>
+                    <td><a href="/saveword-{{category_name_with_id[0]}}-{{word[3]}}">Save word</a> </td>
                 {% endif %}
 
             </tr>

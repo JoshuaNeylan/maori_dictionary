@@ -10,13 +10,13 @@
         <h1>Welcome {{first_name}}!</h1>
     {% endif %}
     <div class="centered_group">
-        {% for category in categories %}
+        {% for category_with_id in categories_with_ids %}
 
-            <a href="/categories/{{ category }}"><button><h1>{{ category }}</h1></button></a>
+            <a href="/category/{{ category_with_id[0] }}"><button><h1>{{ category_with_id[1] }}</h1></button></a>
 
         {% endfor %}
 
-        {% if logged_in and is_teacher %}
+        {% if is_teacher %}
 
              <a href="/addcategory"><button><h1>Add category</h1></button></a>
 

@@ -8,11 +8,11 @@
 
     <div class="centered_group">
 
-        <h1> Are you sure you want to delete the category: {{category}}?</h1>
+        <h1> Are you sure you want to delete the category: {{category_name_with_id[1]}}?</h1>
         <p>This action cannot be undone</p>
 
-        <a href="/remove/category-{{category}}"><button><h1>Yes confirm</h1></button></a>
-        <a href="/categorys/{{ category }}"><button><h1>No go back!</h1></button></a>
+        <a href="/remove/category-{{category_name_with_id[0]}}"><button><h1>Yes confirm</h1></button></a>
+        <a href="/categorys/{{ category_name_with_id[0]}}"><button><h1>No go back!</h1></button></a>
 
 
 
