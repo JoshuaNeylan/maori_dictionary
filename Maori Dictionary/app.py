@@ -1,12 +1,21 @@
 # Imports modules needed for website and database
 import sqlite3
+from datetime import date
 from sqlite3 import Error
+
 from flask import Flask, render_template, request, redirect, session
 from flask_bcrypt import Bcrypt
-from datetime import date
 
 # creating a variable for database
 DB_NAME = "maori_dictionary.db"
+
+# list which holds input maximums for word details in this order:
+# maori, english, definition, category name and year level
+WORD_DETAILS_INPUT_MAXIMUMS = [85, 100, 200, 50, 10]
+
+# list which holds input maximums for signup details in this order:
+# first name, middle name/s, last name, email
+SIGNUP_DETAILS_INPUT_MAXIMUMS = [30, 30, 30, 80]
 
 # creates flask instance
 app = Flask(__name__)
@@ -92,13 +101,12 @@ def is_teacher():
 @app.route('/')
 def render_home():
     # uses the query executor to get an unsorted category list
-    category_list = query_executor("SELECT id, category_name FROM Categories", None, True)
+    category_list = query_executor("SELECT category_name, id FROM Categories", None, True)
 
-    # titles and sorts entries in list and returns the list
-    for i in range(len(category_list)):
-        category_list[i] = [category_list[i][0], category_list[i][1]]
     category_list = sorted(list(category_list))
-    print(category_list)
+    # titles and sorts entries in list(alphabetical order) and returns the list
+    for i in range(len(category_list)):
+        category_list[i] = [category_list[i][1], category_list[i][0]]
 
     # renders the homepage for the user looking at the website
     return render_template("home.html", categories_with_ids=category_list, logged_in=is_logged_in(),
@@ -116,16 +124,31 @@ def render_signup():
     if request.method == "POST":
         # creates a variable for each of the inputs the user has filled in
         fname = request.form.get("fname").title().strip()
+
+        # checks if user has put a middle name in the middle name input
+        if request.form.get("mname") is not None:
+            mname = request.form.get("mname").title()
+        else:
+            # if the user hasn't make middle name a blank string
+            mname = ""
         lname = request.form.get("lname").title().strip()
         email = request.form.get("email").title().lower()
         password = request.form.get("password").strip()
         password2 = request.form.get("password2").strip()
         is_teacher_or_student = request.form.get("teacher_or_student")
 
-        # creates a list of all the details the user had inputted in in the session storage
-        session["sign up details"] = [fname, lname, email, password, password2]
+        # creates a list of all the details the user had inputted in the session storage
+        session["sign up details"] = [fname, mname, lname, email, password, password2]
 
-        # a variable containing characters we don't the user to have their first or last name
+        # checks that the first name, last name and email the user put in the signup inputs
+        # are less than the maximum amount of characters that have been set for each input
+        if [i for i in range(3) if len([fname, mname, lname, email][i]) > SIGNUP_DETAILS_INPUT_MAXIMUMS[i]]:
+            # if the user has gone over the maximum size for any of the signup detail inputs
+            # redirect user to the signup page with the error message
+            # "One or more of the fields of the fields were filled their limit"
+            return redirect(f"/signup?error=One+or+more+of+the+fields+were+filled+over+their+limit")
+
+        # a variable containing characters we don't want the user to have their first or last name
         incorrect_characters_string = """<>{}[]\/,|"""
 
         # if the first name the user inputted is less than two characters redirect user to signup page
@@ -141,8 +164,8 @@ def render_signup():
         # checks if any characters we don't want in user's first or last names are present
         for char in incorrect_characters_string:
 
-            # if any characters we don't want in user's first or last names are present
-            if char in fname or char in lname:
+            # if any characters we don't want in user's first, middle or last names are present
+            if char in fname or char in lname or char in mname:
                 # redirect user to sign up page with error message "Invalid characters in first or last name"
                 return redirect("/signup?error=Invalid+characters+in+first+or+last+name")
 
@@ -173,8 +196,9 @@ def render_signup():
 
         try:
 
-            query_executor("INSERT INTO Users(id, first_name, last_name, email, password) VALUES(Null, ?, ?, ?, ?)",
-                           (fname, lname, email, hashed_password), False)
+            query_executor(
+                "INSERT INTO Users(id, first_name, middle_name, last_name, email, password) VALUES(Null, ?, ?, ?, ?, ?)",
+                (fname, mname, lname, email, hashed_password), False)
 
         except sqlite3.IntegrityError:
             # if the email the user put in the signup form has already been used before for an account
@@ -205,7 +229,7 @@ def render_signup():
 
     # if the user hasn't filled in any details yet, leave the sign up form blank
     if signup_details is None:
-        signup_details = ["", "", "", "", ""]
+        signup_details = ["", "", "", "", "", ""]
 
     # creates a variable for the error message which can be used in the html to display information more clearly
     # unless there is none
@@ -228,37 +252,40 @@ def render_login():
     # if the user attempts to log in
     if request.method == "POST":
 
-        # creates variables for the the email and password and a list containing both in session storage
+        # creates variables for the email and password and a list containing both in session storage
         email = request.form["email"].strip().lower()
         password = request.form["password"].strip()
         session["log in details"] = [email, password]
 
         # creates a request to select all the user's info (apart from email)
         # by using the email to search through the Users table in the database
-        user_data = query_executor("SELECT id, first_name, last_name, password FROM Users WHERE email = ?", (email,),
+        user_data = query_executor("SELECT id, first_name, middle_name, last_name, password FROM Users WHERE email = ?",
+                                   (email,),
                                    True)
 
         # attempts to set a variable for each detail associated
         try:
             user_id = user_data[0][0]
             first_name = user_data[0][1]
-            last_name = user_data[0][2]
-            db_password = user_data[0][3]
+            middle_name = user_data[0][2]
+            last_name = user_data[0][3]
+            db_password = user_data[0][4]
 
         except IndexError:
             # if the email the user put in cannot be found in the User table
             # redirect them to the login page with the error message "email cannot be found"
             return redirect("/login?error=Email+cannot+be+found")
-        print(db_password, password)
+
         # if the password the user entered does not match the one associated with the email they typed in
         if not bcrypt.check_password_hash(db_password, password):
             # redirect user to the login page with error message "email or password is incorrect"
             return redirect("/login?error=Email+or+password+is+incorrect")
 
-        # removes login details from session storage and instead stores the user's id, email, first and last name
+        # removes login details from session storage and instead stores the user's id, email, first middle and last name
         session["email"] = email
         session["user_id"] = user_id
         session["first_name"] = first_name
+        session["middle_name"] = middle_name
         session["last_name"] = last_name
         session.pop("log in details")
 
@@ -331,12 +358,12 @@ def render_category(category_id):
 
     # makes a variable to display the current error (if there is one) on the page
     error = request.args.get("error")
-    print(updated_list_of_category_words)
+
     if error is None:
         error = ""
 
     #############################################################
-    # if the user is attempting to add a word to the dictionary:#
+    # if the user is attempting to add a word to the dictionary #
     #############################################################
     if request.method == "POST":
 
@@ -349,6 +376,29 @@ def render_category(category_id):
         # this word detail list is used to keep the details a user has typed if they got an error
         session["new word details"] = [maori, english, year_level, definition]
 
+        # attempts to check if the user hasn't gone over the maximum size for any of the word detail inputs
+        try:
+
+            if [i for i in range(3) if len([maori, english, definition][i]) > WORD_DETAILS_INPUT_MAXIMUMS[i]] or int(
+                    year_level) > WORD_DETAILS_INPUT_MAXIMUMS[4]:
+                # if the user has gone over the maximum size for any of the word detail inputs
+                # redirect user to the category they were trying to add a word to with the error message
+                # "One or more of the fields of the fields were filled their limit"
+                return redirect(f"/category/{category_id}?error=One+or+more+of+the+fields+were+filled+over+their+limit")
+
+        except ValueError:
+            # if a letter/s has been entered as the year level first encountered
+            # redirect user to the category they were trying to add a word to with the error message
+            # "Year level first encountered at must be a number"
+            return redirect(f"/category/{category_id}?error=Year+level+first+encountered+at+must+be+number")
+
+        # checks if any of the details the user inputted are blank
+        for detail in session.get("new word details"):
+            if not detail:
+                # if one of the details the user entered in was empty
+                # redirect them to the category they were trying to add the word to with the error message
+                # "All fields must be filled to add word"
+                return redirect(f"/category/{category_id}?error=All+fields+must+be+filled+to+add+word")
         # creates a string with characters that could be problematic being in a word's maori/english translation
         incorrect_characters_string = """<>{}[]\/,|"""
 
@@ -384,7 +434,8 @@ def render_category(category_id):
                 "INSERT INTO Dictionary(maori, english, category, year_level, timestamp, author, definition)"
                 " VALUES(?, ?, ?, ?, ?, ?, ?)",
                 (maori, english, category_name, year_level, date.today(),
-                 f"{session.get('first_name')} {session.get('last_name')}", definition), False)
+                 f"{session.get('first_name')} {session.get('middle_name')} {session.get('last_name')}", definition),
+                False)
 
             # reloads page with message "Word added"
             return redirect(f"/category/{category_id}?error=Word+added")
@@ -549,7 +600,9 @@ def render_category_word_details(word_id, category_id):
 
         image_found = False
 
-    # if the user is attempting to edit the word they are looking at
+    ##################################################################
+    # if the user is attempting to edit the word they are looking at #
+    ##################################################################
     if request.method == "POST":
         # creates a variable for each word detail and a list containing new word's details (that the user chooses)
         maori = request.form["maori"].lower()
@@ -558,7 +611,32 @@ def render_category_word_details(word_id, category_id):
         definition = request.form["definition"]
         new_category = request.form["category"]
         session["new word details"] = [maori, english, year_level, definition]
+        # attempts to check if the user hasn't gone over the maximum size for any of the word detail inputs
+        try:
 
+            if [i for i in range(4) if
+                len([maori, english, definition, new_category][i]) > WORD_DETAILS_INPUT_MAXIMUMS[i]] or int(
+                year_level) > WORD_DETAILS_INPUT_MAXIMUMS[4]:
+                # if the user has gone over the maximum size for any of the word detail inputs
+                # redirect user to the page of the word they were trying to edit with the error message
+                # "One or more of the fields of the fields were filled their limit"
+                return redirect(
+                    f"/{category_id}/{word_details_list[8]}?error=One+or+more+of+the+fields+were+filled+over+their+limit")
+
+        except ValueError:
+            # if a letter/s has been entered as the year level first encountered
+            # redirect user to the page of the word they were trying to edit with the error message
+            # "Year level first encountered at must be a number"
+            return redirect(
+                f"/{category_id}/{word_details_list[8]}?error=Year+level+first+encountered+at+must+be+number")
+
+        # checks if any of the details the user inputted are blank
+        for detail in session.get("new word details"):
+            if not detail:
+                # if one of the details the user entered in was empty
+                # redirect them to the category they were trying to edit the word to with the error message
+                # "All fields must be filled to edit word"
+                return redirect(f"/{category_id}/{word_details_list[8]}?error=All+fields+must+be+filled+to+edit+word")
         # using the query executor
         # checks the categories table to see if new category exists in table
         try:
@@ -585,8 +663,7 @@ def render_category_word_details(word_id, category_id):
                                 f"?error=Invalid+characters+in+english+or+maori+details")
 
         # gets the first and last name of the user from the session data to create an author variable
-        first_name, last_name = session.get("first_name"), session.get("last_name")
-        author = f"{first_name} {last_name}"
+        author = f"{session.get('first_name')} {session.get('middle_name')} {session.get('last_name')}"
 
         # using the query executor
         # checks if the new word details have the same english/maori translation as another word
@@ -637,7 +714,7 @@ def render_category_word_details(word_id, category_id):
 
     # renders the word details page for the user looking at the website
     return render_template("word_details.html", word_details=word_details_list, image_found=image_found,
-                           logged_in=is_logged_in(), error=error, is_teacher=is_teacher())
+                           logged_in=is_logged_in(), error=error, is_teacher=is_teacher(), category_id=category_id)
 
 
 # function executes when the user goes to the saved words page
@@ -685,6 +762,9 @@ def render_saved():
 
         # add the current words details and matching timestamp to the list containing all the saved words details
         saved_words_details_list.append([updated_word_details, word_id_with_timestamp[1]])
+
+        # sorts saved words list
+        saved_words_details_list = sorted(saved_words_details_list)
 
     # renders the saved words' page for the user attempting to look at it
     return render_template("saved_words.html", logged_in=is_logged_in(),
@@ -893,6 +973,14 @@ def remove_word(word_id):
 
     # redirects the user to the homepage
     return redirect("/")
+
+
+# function executes when user goes to a page that has not got a function made for it
+@app.errorhandler(404)
+def unknown_page(error):
+    # redirects user to homepage with error message
+    # "Page not found"
+    return redirect("/?error=Page+not+found")
 
 
 # runs the application

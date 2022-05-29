@@ -1,16 +1,18 @@
+<!-- html document starts with what is written in base html-->
 {% extends 'base.html' %}
 
-{% block title %}Maōri Dictionary | Home{% endblock %}
-
-{% block heading %}Maōri - English Dictionary{% endblock %}
-
+<!-- holds what the title and heading should be for this page -->
+{% block title %}Māori Dictionary | Category{% endblock %}
+{% block heading %}Māori - English Dictionary{% endblock %}
+<!-- holds the main html for this page -->
 {% block main %}
+    <!-- if the user has teacher permissions show the delete category link otherwise don't -->
     {% if is_teacher %}
-
+                        <!-- (name of category) -->                                       <!-- (category id) -->
         <h1>Words about {{ category_name_with_id[1] }}: -<a href="/confirmation/category-{{category_name_with_id[0]}}">Delete Category</a></h1>
 
     {% else %}
-
+                        <!-- (name of category) -->
     <h1> Words about {{ category_name_with_id[1] }}:</h1>
 
     {% endif %}
@@ -23,51 +25,55 @@
             <th> Maori </th>
             <th> English</th>
             <th> Image </th>
+             <!-- if the user is logged in show the save word heading -->
             {% if logged_in %}
              <th> Save Word </th>
             {% endif %}
 
 
         </tr>
-
+        <!-- for each word in the category do -->
         {% for word in words %}
 
-            <tr>
-                <td><a href = "/{{category_name_with_id[0]}}/{{word[3]}}">{{word[0]}}</a> </td>
-                <td>{{word[1]}}</td>
+            <tr>                <!-- (category id)            (word id)     (word)-->
+                <td><b><a href = "/{{category_name_with_id[0]}}/{{word[3]}}">{{word[0]}}</a></b></td>
+                <!-- (word in english) -->
+                <td><b>{{word[1]}}</b></td>                   <!-- (word's image address) -->
                 <td><img class = "thumb" src = "../static/images/{{word[2]}}"></td>
-                {% if logged_in %}
-                    <td><a href="/saveword-{{category_name_with_id[0]}}-{{word[3]}}">Save word</a> </td>
+
+                <!-- if the user is logged in show the saved word link -->
+                {% if logged_in %}          <!-- (category id)           (word id)     -->
+                    <td><b><a href="/saveword-{{category_name_with_id[0]}}-{{word[3]}}">Save word</a></b></td>
                 {% endif %}
 
             </tr>
         {% endfor %}
 
     </table>
-    {% if logged_in and is_teacher %}
+    <!-- is user has teacher permissions -->
+    {% if is_teacher %}
 
 
          <form class="dataForm" method = "POST">
 
                 <h1> Add a word </h1>
 
-                Maori:
-
+                Maori:                                                          <!-- (what the user has inputted here) -->
                 <input type="text" name="maori" id="maori" maxlength="85" required value = {{new_word_details[0]}}>
 
 
                 <br>
 
                  English:
-
+                                                                                        <!-- (what the user has inputted here) -->
                 <input type="text" name="english" id="english" maxlength="100" required value = {{new_word_details[1]}}>
 
                 Year level word is first encountered at:
-
+                                                                                                    <!-- (what the user has inputted here) -->
                 <input type="number" name="year_level" id="year_level" min = "1" max = "10" required value = {{new_word_details[2]}}>
 
                 Definition:
-
+                                                                                                <!-- (what the user has inputted here) -->
                 <input type="text" name="definition" id="definition" maxlength="200" required value = {{new_word_details[3]}}>
 
                 <br>

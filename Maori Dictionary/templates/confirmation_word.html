@@ -1,15 +1,15 @@
+<!-- html document starts with what is written in base html-->
 {% extends 'base.html' %}
-
-{% block title %}Maōri Dictionary | Home{% endblock %}
-
-{% block heading %}Maōri - English Dictionary{% endblock %}
-
+<!-- holds what the title and heading should be for this page -->
+{% block title %}Māori Dictionary | Word Confirmation{% endblock %}
+{% block heading %}Māori - English Dictionary{% endblock %}
+<!-- holds the main html for this page -->
 {% block main %}
 
     <div class="centered_group">
 
         <h1> Are you sure you want to delete the word: {{word_in_maori}}?</h1>
-        <p>This action cannot be undone</p>
+        <p><b>This action cannot be undone</b></p>
 
         <a href="/remove/word-{{word_id}}"><button><h1>Yes confirm</h1></button></a>
         <a href="/"><button><h1>No go back!</h1></button></a>

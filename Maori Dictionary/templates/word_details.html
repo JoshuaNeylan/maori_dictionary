@@ -1,17 +1,17 @@
+<!-- html document starts with what is written in base html-->
 {% extends 'base.html' %}
-
-{% block title %}Maōri Dictionary | Home{% endblock %}
-
-{% block heading %}Maōri - English Dictionary{% endblock %}
-
+<!-- holds what the title and heading should be for this page -->
+{% block title %}Māori Dictionary | Word Details{% endblock %}
+{% block heading %}Māori - English Dictionary{% endblock %}
+<!-- holds the main html for this page -->
 {% block main %}
-
-      {% if logged_in and is_teacher %}
-
-    <div class = "h0">{{word_details[0]}}: {{word_details[1]}} -<a href="/confirmation/word-{{word_details[8]}}">Delete word</a></div>
+    <!-- if the user is a teacher show the delete word link -->
+      {% if is_teacher %}
+                    <!-- (word) -->       <!-- (word in english) -->                        <!-- (word id) -->
+<div class = "h0">{{word_details[0]}}: {{word_details[1]}} -<a href="/confirmation/word-{{word_details[8]}}"><b>Delete word</b></a></div>
 
     {% else %}
-
+                            <!-- (word) -->     <!-- (word in english) -->
         <div class = "h0">{{word_details[0]}}: {{word_details[1]}}</div><br>
 
     {% endif %}
@@ -20,27 +20,30 @@
         <tr>
 
             <td><b>Definition:</b></td>
-            <td> {{word_details[3]}} </td>
+            <!-- (word definition) -->
+            <td><b>{{word_details[3]}}</b></td>
 
         </tr>
 
         <tr>
             <td><b> Category:</b></td>
-            <td>{{word_details[2]}}</td>
+            <!-- (word category) -->
+            <td><b>{{word_details[2]}}</b></td>
 
         </tr>
 
         <tr>
             <td><b>Year level word is first encountered:</b></td>
-            <td>{{word_details[4]}}</td>
+            <!-- (word year level) -->
+            <td><b>{{word_details[4]}}</b></td>
 
         </tr>
 
         <tr>
 
-
+            <!-- if the word doesn't have an image display the noimage image -->
             {% if image_found %}
-
+                                                        <!-- (word image address) -->
                 <td colspan="2"><img src="../static/images/{{word_details[5]}}"></td>
 
             {% else %}
@@ -51,44 +54,45 @@
 
         </tr>
 
-        <tr>
-            <td colspan="2"><b>This was edited by: {{word_details[7]}} on the {{word_details[6]}}</b></td>
+        <tr>                                     <!-- (word author)        (when the word is edited)                                     (category id)           (word id) -->
+            <td colspan="2"><b>This was edited by: {{word_details[7]}} on the {{word_details[6]}} {% if logged_in %}<a href="/saveword-{{category_id}}-{{word_details[8]}}">Save Word</a>{% endif %}</b></td>
 
         </tr>
 
     </table>
 
-     {% if logged_in and is_teacher %}
+    <!-- if the user has teacher permissions let them edit words -->
+     {% if is_teacher %}
 
 
          <form class="dataForm" method = "POST">
-
+                                <!-- (word) -->
                 <h1> Edit word: {{word_details[0]}}</h1>
 
                 Maori:
-
+                                                                    <!-- (what the user has typed in this input if anything)-->
                 <input type="text" name="maori" id="maori" maxlength="85" required value = "{{word_details[0]}}">
 
 
                 <br>
 
                  English:
-
+                                                                     <!-- (what the user has typed in this input if anything)-->
                 <input type="text" name="english" id="english" maxlength="100" required value = "{{word_details[1]}}">
 
                 Year level word is first encountered at:
-
+                                                                                    <!-- (what the user has typed in this input if anything)-->
                 <input type="number" name="year_level" id="year_level" min = "1" max = "10" required value = "{{word_details[4]}}">
 
                 Definition:
-
+                                                                                     <!-- (what the user has typed in this input if anything)-->
                 <input type="text" name="definition" id="definition" maxlength="200" required value = "{{word_details[3]}}">
 
                 <br>
 
 
                 Category:
-
+                                                                         <!-- (what the user has typed in this input if anything)-->
                 <input type="text" name="category" id="category" maxlength="50" required value = "{{word_details[2]}}">
 
                 <br>

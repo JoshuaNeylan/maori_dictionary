@@ -1,9 +1,9 @@
+<!-- html document starts with what is written in base html-->
 {% extends 'base.html' %}
-
-{% block title %}Maōri Dictionary | Home{% endblock %}
-
-{% block heading %}Maōri - English Dictionary{% endblock %}
-
+<!-- holds what the title and heading should be for this page -->
+{% block title %}Māori Dictionary | Saved Words{% endblock %}
+{% block heading %}Māori - English Dictionary{% endblock %}
+<!-- holds the main html for this page -->
 {% block main %}
 
 
@@ -19,14 +19,19 @@
 
         </tr>
 
+        <!-- for each of the saved words do -->
         {% for word_details in saved_words_details_list %}
             <tr>
 
-                <td><a href = "/{{word_details[0][5]}}/{{word_details[0][4]}}">{{word_details[0][0]}}</a></td>
-                <td> {{word_details[0][1]}} </td>
+                                <!-- (word category) --><!-- (word id) -->     <!-- (word) -->
+                <td><b><a href = "/{{word_details[0][5]}}/{{word_details[0][4]}}">{{word_details[0][0]}}</a></b></td>
+                    <!-- (word in english) -->
+                <td><b> {{word_details[0][1]}} </b></td>         <!-- (word's image address ) -->
                 <td><img class = "thumb" src = "../static/images/{{word_details[0][3]}}"></td>
-                <td>This word was saved: {{word_details[1]}}</td>
-                <td><a href = "/remove_saved_word-{{word_details[0][4]}}">Remove word from saved</a></td>
+                                        <!-- (when the word was saved) -->
+                <td><b>This word was saved: {{word_details[1]}}</b></td>
+                                                <!-- (word id) -->
+                <td><b><a href = "/remove_saved_word-{{word_details[0][4]}}">Remove word from saved</a></b></td>
 
             </tr>
 

@@ -5,6 +5,7 @@
 	<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Suez+One&display=swap" rel="stylesheet">
+    <!-- creates a block which can be used to set up titles easily for pages -->
 	<title>{% block title %}{% endblock %}</title>
 	<meta name="Description" content="Author: Joshua Neylan, Content: A dictionary to convert maori words to english.">
 </head>
@@ -12,6 +13,7 @@
 <body>
 
     <header>
+        <!-- creates a block which can be used to set up headings easily for pages -->
         <h1>{% block heading %}{% endblock %}</h1>
     </header>
 
@@ -20,12 +22,13 @@
         <ul>
 
             <li><h1><a href="\">Home</a></h1></li>
-
+            <!-- shows logout and saved words links if the user is logged in -->
             {% if logged_in %}
                 <li><h1><a href="/saved">Saved words</a></h1></li>
                 <li><h1><a href="/logout">Log out</a></h1></li>
 
             {% else %}
+            <!-- shows the login link if the user isn't logged in -->
                 <li><h1><a href="/login">Login</a></h1></li>
 
 

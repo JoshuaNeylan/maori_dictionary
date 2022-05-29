@@ -1,9 +1,9 @@
+<!-- html document starts with what is written in base html-->
 {% extends 'base.html' %}
-
-{% block title %}Maōri Dictionary | Home{% endblock %}
-
-{% block heading %}Maōri - English Dictionary{% endblock %}
-
+<!-- holds what the title and heading should be for this page -->
+{% block title %}Māori Dictionary | Login{% endblock %}
+{% block heading %}Māori - English Dictionary{% endblock %}
+<!-- holds the main html for this page -->
 {% block main %}
 
     <form class="dataForm" method = "POST">
@@ -11,13 +11,13 @@
             <h1> Login </h1>
 
             Email:
-
+                                                    <!-- (what the user has typed in this input if anything)-->
             <input type="email" name="email" id="email" required value = "{{ log_in_details[0] }}">
 
             <br>
 
             Password
-
+                                                    <!-- (what the user has typed in this input if anything)-->
             <input type="password" name="password" id="password" required value= "{{ log_in_details[1] }}">
 
             <br>

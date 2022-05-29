@@ -81,13 +81,16 @@ table {
     width: 50%;
     border: 2px solid #666;
     border-collapse: collapse;
-
+    background-color: white;
 }
 
 th, td {
+    inline-size: min-content;
+    overflow-wrap: break-word;
     border: 1px solid #888;
     padding: 0.5rem;
     text-align: left;
+    max-width: 90vw;
 }
 th {
     background-color: #000;

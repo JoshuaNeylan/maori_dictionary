@@ -1,9 +1,9 @@
+<!-- html document starts with what is written in base html-->
 {% extends 'base.html' %}
-
-{% block title %}Maōri Dictionary | Home{% endblock %}
-
-{% block heading %}Maōri - English Dictionary{% endblock %}
-
+<!-- holds what the title and heading should be for this page -->
+{% block title %}Māori Dictionary | Signup{% endblock %}
+{% block heading %}Māori - English Dictionary{% endblock %}
+<!-- holds the main html for this page -->
 {% block main %}
 
     <form class="dataForm" method = "POST">
@@ -11,39 +11,44 @@
             <h1> Sign Up </h1>
 
             First Name:
+                                                                                <!-- (what the user has typed in this input if anything)-->
+            <input type = "text" name = "fname" id = "fname" maxlength="30" required value = "{{ sign_up_details[0] }}">
 
-            <input type = "text" name = "fname" id = "fname" required value = "{{ sign_up_details[0] }}">
+            <br>
+
+            Middle Name/s (Optional):                                   <!-- (what the user has typed in this input if anything)-->
+            <input type = "text" name = "mname" id = "mname" maxlength="30"  value = "{{ sign_up_details[1] }}">
 
             <br>
 
             Last Name:
-
-            <input type = "text" name = "lname" id = "lname" required  value = "{{ sign_up_details[1] }}">
+                                                                                <!-- (what the user has typed in this input if anything)-->
+            <input type = "text" name = "lname" id = "lname" maxlength="30" required value = "{{ sign_up_details[2] }}">
 
             <br>
 
             Email:
-
-            <input type="email" name="email" id="email" required value = "{{ sign_up_details[2] }}">
+                                                                          <!-- (what the user has typed in this input if anything)-->
+            <input type="email" name="email" id="email" maxlength="80" required value = "{{ sign_up_details[3] }}">
 
             <br>
 
             Password
-
-            <input type="password" name="password" id="password" required value= "{{ sign_up_details[3] }}">
+                                                                        <!-- (what the user has typed in this input if anything)-->
+            <input type="password" name="password" id="password" required value= "{{ sign_up_details[4] }}">
 
             <br>
 
             Confirm Password:
-
-            <input type = "password" name = "password2" id = "password2" required  value = "{{ sign_up_details[4] }}">
+                                                                                <!-- (what the user has typed in this input if anything)-->
+            <input type = "password" name = "password2" id = "password2" required  value = "{{ sign_up_details[5] }}">
 
             <br>
             <br>
 
             <div class="centered_group">
                 <p>Are you a teacher or a student?</p>
-            </div>
+                <br>
             <div class="formRow">
 
                     <input type = "radio" name = "teacher_or_student" id = "teacher" required  value = "teacher">
@@ -51,8 +56,7 @@
                     <input type = "radio" name = "teacher_or_student" id = "student" required  value = "student">
                     <label for="teacher">Student</label>
             </div>
-            <br>
-            <br>
+            </div>
             <input type="submit" value="sign up" required>
 
             <div class = "error"> <strong> {{ error }} </strong> </div>
